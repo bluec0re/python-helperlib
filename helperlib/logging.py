@@ -67,6 +67,11 @@ def default_config(level=logging.INFO, **kwargs):
     logging.config.dictConfig(options)
 
 
+def scope_logger(cls):
+    cls.log = logging.getLogger('{0}.{1}'.format(cls.__module__, cls.__name__))
+    return cls
+
+
 if __name__ == '__main__':
     default_config(logging.DEBUG)
 
