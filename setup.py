@@ -16,7 +16,7 @@ config = {
     'install_requires': [],
     'packages': ['helperlib'],
     'scripts': [],
-    'name': 'python-helperlib'
+    'name': 'helperlib'
 }
 
 setup(**config)
