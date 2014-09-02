@@ -247,12 +247,15 @@ class Table(object):
 
     def __init__(self, term, rows, col_format, seperator=" ", borders=False):
         self.term = term
-        self.rows = [[ unicode(c) for c in r] for r in rows]
+        if sys.version_info >= (3, 0, 0):
+            self.rows = [[ str(c) for c in r] for r in rows]
+        else:
+            self.rows = [[ unicode(c) for c in r] for r in rows]
         self.col_format = col_format
         self.seperator = seperator
         self.borders = borders
         self.col_width = [ max([ len(
-                                    self.term.remove_ctrl_chars(d[1])
+                                    self.term.remove_ctrl_chars(d[i])
                                  ) if i < len(d) else 0
                                 for d in self.rows ]) for i in
                                     range(0, len(self.col_format))]

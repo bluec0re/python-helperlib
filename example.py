@@ -1,5 +1,6 @@
 from helperlib.logging import default_config
 from helperlib.exception import install_hook
+from helperlib.terminal import Table, ProgressBar, TerminalController
 from helperlib import *
 import logging
 import time
@@ -30,6 +31,26 @@ except:
     exc("Catched")
 spinner.waitfor("Doing long running stuff")
 time.sleep(3)
-
-raise ValueError(123)
 spinner.failed()
+
+term = TerminalController()
+print(term.render("${RED}Some ${MAGENTA}nice${NORMAL} ${BG_GREEN}color${NORMAL} ${BLINK}${CYAN}output${NORMAL}"))
+
+
+pbar = ProgressBar(term, 'Nice Progressbar is loading...')
+pbar.update(0.1, 'wait for it...')
+time.sleep(1)
+pbar.update(0.5, 'wait for it...!')
+time.sleep(1)
+pbar.update(1, 'DONE!!!')
+
+
+tbl = Table(term, [['Linux', 'Rulez'], ['Windows', 'Fails'], ['OS X', 'Sucks']], 'cc', ' | ', True)
+
+tbl.render()
+raise ValueError(123)
+
+
+
+
+
