@@ -32,10 +32,28 @@ class ColorFormatter(logging.Formatter):
 
 
 def load_config(filename="logging.ini", *args, **kwargs):
+    """
+    Load logger config from file
+    
+    Keyword arguments:
+    filename -- configuration filename (Default: "logging.ini")
+    *args -- options passed to fileConfig
+    **kwargs -- options passed to fileConfigg
+    
+    """
     logging.config.fileConfig(filename, *args, **kwargs)
 
 
-def default_config(level=logging.INFO, **kwargs):
+def default_config(level=logging.INFO, auto_init=True, **kwargs):
+    """
+    Returns the default config dictionary and inits the logging system if requested
+    
+    Keyword arguments:
+    level -- loglevel of the console handler (Default: logging.INFO)
+    auto_init -- initialize the logging system with the provided config (Default: True)
+    **kwargs -- additional options for the logging system
+    
+    """
     options = {
         'version': 1,
         'formatters': {
@@ -63,11 +81,24 @@ def default_config(level=logging.INFO, **kwargs):
         }
 
     options.update(kwargs)
-
-    logging.config.dictConfig(options)
+    
+    if auto_init:
+        logging.config.dictConfig(options)
+    return options
 
 
 def scope_logger(cls):
+    """
+    Class decorator for adding a class local logger
+
+    Example:
+    >>> @scope_logger
+    >>> class Test:
+    >>>     def __init__(self):
+    >>>         self.log.info("class instantiated")
+    >>> t = Test()
+    
+    """
     cls.log = logging.getLogger('{0}.{1}'.format(cls.__module__, cls.__name__))
     return cls
 
