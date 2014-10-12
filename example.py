@@ -1,9 +1,10 @@
-from helperlib.logging import default_config
+from helperlib.logging import default_config, LogPipe
 from helperlib.exception import install_hook
 from helperlib.terminal import Table, ProgressBar, TerminalController
 from helperlib import *
 import logging
 import time
+import subprocess
 
 default_config(level='DEBUG')
 install_hook()
@@ -48,6 +49,11 @@ pbar.update(1, 'DONE!!!')
 tbl = Table(term, [['Linux', 'Rulez'], ['Windows', 'Fails'], ['OS X', 'Sucks']], 'cc', ' | ', True)
 
 tbl.render()
+
+
+with LogPipe('DEBUG') as logger:
+    subprocess.check_call(['ifconfig'], stdout=logger)
+
 raise ValueError(123)
 
 

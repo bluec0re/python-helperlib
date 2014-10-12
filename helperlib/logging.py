@@ -3,6 +3,8 @@ from __future__ import absolute_import, unicode_literals
 import logging
 import logging.config
 import re
+import threading
+import os
 
 from .terminal import TerminalController
 
@@ -103,6 +105,47 @@ def scope_logger(cls):
     return cls
 
 
+class LogPipe(threading.Thread):
+
+    def __init__(self, level):
+        """Setup the object with a logger and a loglevel
+        and start the thread
+        """
+        super(LogPipe, self).__init__(name='LogPipe')
+        self.daemon = False
+        self.level = logging._checkLevel(level)
+        self.fdRead, self.fdWrite = os.pipe()
+        self.pipeReader = os.fdopen(self.fdRead)
+        self._finished = threading.Event()
+        self.start()
+
+    def fileno(self):
+        """Return the write file descriptor of the pipe
+        """
+        return self.fdWrite
+
+    def run(self):
+        """Run the thread, logging everything.
+        """
+        self._finished.clear()
+        for line in iter(self.pipeReader.readline, ''):
+            logging.log(self.level, line.strip('\n'))
+
+        self.pipeReader.close()
+        self._finished.set()
+
+    def close(self):
+        """Close the write end of the pipe.
+        """
+        os.close(self.fdWrite)
+        self._finished.wait()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.close()
+
 if __name__ == '__main__':
     default_config(logging.DEBUG)
 
@@ -113,3 +156,8 @@ if __name__ == '__main__':
     log.warning('Warning')
     log.info('Info')
     log.debug('Debug')
+
+
+    import subprocess
+    with LogPipe('INFO') as logPipe:
+        subprocess.check_call(['ls'], stdout=logPipe)
