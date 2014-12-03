@@ -70,7 +70,7 @@ def default_config(level=logging.INFO, auto_init=True, **kwargs):
                 'class': 'logging.StreamHandler',
                 'formatter': 'color',
                 'level': level,#logging.getLevelName(level),
-                'stream': 'ext://sys.stdout',
+                'stream': 'ext://sys.stderr',
                 }
             },
         'loggers': {
