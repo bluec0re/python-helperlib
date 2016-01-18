@@ -173,7 +173,8 @@ class TerminalController(object):
             string = string.replace(getattr(self, 'BG_'+color), '')
         for capability in self._STRING_CAPABILITIES:
             attrib = capability.split('=')[0]
-            string = string.replace(getattr(self, attrib), '')
+            if hasattr(self, attrib):
+                string = string.replace(getattr(self, attrib), '')
         return string
 
 #######################################################################

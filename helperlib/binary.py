@@ -1,5 +1,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
+import sys
+
 from .internal import TERM
 
 
@@ -111,6 +113,10 @@ def hexdump(data, cols=8, folded=False, stream=False):
                 offset += 1
                 if isinstance(byte, str):
                     bval = ord(byte)
+                elif isinstance(byte, int):
+                    bval = byte
+                    if 31 < bval < 127:
+                        byte = chr(bval)
                 else:
                     bval = list(byte)[0]
                     if 31 < bval < 127:
@@ -147,12 +153,12 @@ def hexdump(data, cols=8, folded=False, stream=False):
             yield line
 
 
-def print_hexdump(data, colored=False, cols=8, *args, **kwargs):
+def print_hexdump(data, colored=False, cols=8, file=sys.stdout, *args, **kwargs):
     for row in hexdump(data, cols, *args, **kwargs):
         if colored:
             idx = row.find(':') + 1
             row = TERM.render("${CYAN}" + row[:idx] + "${YELLOW}" + row[idx:idx+3*cols] + "${BLUE}") + row[idx+3*cols:] + TERM.render("${NORMAL}")
-        print(row)
+        print(row, file=file)
 
 
 def print_struct(struct, ident=0):
@@ -172,7 +178,13 @@ def print_struct(struct, ident=0):
      foo: 2
     bar: 1
     """
-    if not hasattr(struct, '_fields_'):
+    if not isinstance(struct, (str, bytes, list, tuple)) and hasattr(struct, '__getitem__'): # array
+        print('[')
+        for item in struct:
+            print(" "*ident, end=' ')
+            print_struct(item, ident+1)
+        print(" "*ident + "]")
+    elif not hasattr(struct, '_fields_'):
         print(struct)
     else:
         if ident:
