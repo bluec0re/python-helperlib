@@ -58,6 +58,7 @@ def default_config(level=logging.INFO, auto_init=True, **kwargs):
     """
     options = {
         'version': 1,
+        'disable_existing_loggers': False,
         'formatters': {
             'color': {
                 '()': __name__ + '.ColorFormatter',

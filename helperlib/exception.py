@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import logging
 import sys
+import os
 from traceback import format_exception
 
 
@@ -10,6 +11,7 @@ __all__ = [
 ]
 
 _hooks = []
+
 
 def uncaught_hook(exc_class, exc_inst, trb):
     """
@@ -27,6 +29,10 @@ def uncaught_hook(exc_class, exc_inst, trb):
 
     logging.fatal("Uncaught exception: %s\n%s", exc_inst,
                   ''.join(format_exception(exc_class, exc_inst, trb)))
+
+    if os.environ.get('JIT_DEBUG'):
+        import pdb
+        pdb.post_mortem(trb)
 
 
 def hook(*args, **kwargs):

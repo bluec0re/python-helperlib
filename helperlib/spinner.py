@@ -1,5 +1,5 @@
-from __future__ import absolute_import, unicode_literals
 #  vim: set ts=8 sw=4 tw=0 fileencoding=utf-8 filetype=python expandtab:
+from __future__ import absolute_import, unicode_literals
 
 import sys
 import time
