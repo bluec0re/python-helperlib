@@ -12,8 +12,8 @@ from .terminal import TerminalController
 class ColorFormatter(logging.Formatter):
     def __init__(self, fmt=None, *args, **kwargs):
         if fmt:
-            fmt = re.sub(r'%\(level(no|name)\)s',
-                         r'%(levelcolor)s%(level\1)s${NORMAL}', fmt)
+            fmt = re.sub(r'%\(level(no|name)\)\d*s',
+                         r'%(levelcolor)s\g<0>${NORMAL}', fmt)
         super(ColorFormatter, self).__init__(fmt, *args, **kwargs)
         self.term = TerminalController()
 
