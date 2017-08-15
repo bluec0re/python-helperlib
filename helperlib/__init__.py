@@ -8,7 +8,7 @@ from . import spinner
 from . import terminal
 from . import exception
 from .binary import (
-        hexdump, print_hexdump, print_struct
+        hexdump, print_hexdump, print_struct, hexII, print_hexII
         )
 
 __all__ = ['spinner', 'done', 'fail', 'prompt',
