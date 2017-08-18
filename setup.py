@@ -12,7 +12,7 @@ config = {
     'url': 'https://github.com/bluec0re/python-helperlib.git',
     'download_url': 'https://github.com/bluec0re/python-helperlib/archive/master.zip',
     'author_email': '',
-    'version': '0.3.1',
+    'version': '0.4.0',
     'install_requires': [],
     'packages': ['helperlib'],
     'scripts': [],
