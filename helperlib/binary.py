@@ -175,16 +175,17 @@ def hexdump(data, cols=8, folded=False, stream=False, offset=0, header=False):
             yield line
 
 
-def print_hexdump(data, colored=False, cols=16, file=sys.stdout, header=False, *args, **kwargs):
+def print_hexdump(data, colored=False, cols=16, file=sys.stdout, header=False, bright=False, *args, **kwargs):
     first = header
+    dim = '${DIM}' if bright else ''
     for row in hexdump(data, cols, header=header, *args, **kwargs):
         if colored:
             if first:
-                row = TERM.render("${CYAN}" + row + "${NORMAL}")
+                row = TERM.render(dim + "${CYAN}" + row + "${NORMAL}")
                 first = False
             else:
                 idx = row.find(':') + 1
-                row = TERM.render("${CYAN}" + row[:idx] + "${YELLOW}" + row[idx:idx+3*cols] + "${BLUE}") + row[idx+3*cols:] + TERM.render("${NORMAL}")
+                row = TERM.render(dim + "${CYAN}" + row[:idx] + "${YELLOW}" + row[idx:idx+3*cols] + "${BLUE}") + row[idx+3*cols:] + TERM.render("${NORMAL}")
         print(row, file=file)
 
 
@@ -278,11 +279,14 @@ def hexII(data, cols=8, folded=False, stream=False, offset=0, header=True):
             yield line
 
 
-def print_hexII(data, colored=False, cols=16, file=sys.stdout, *args, **kwargs):
+def print_hexII(data, colored=False, cols=16, file=sys.stdout, bright=False, *args, **kwargs):
+    dim = '${DIM}' if bright else ''
+    # no color support atm
+    colored = False
     for row in hexII(data, cols, *args, **kwargs):
-        if False and colored:
+        if colored:
             idx = row.find(':') + 1
-            row = TERM.render("${CYAN}" + row[:idx] + "${YELLOW}" + row[idx:idx+3*cols] + "${BLUE}") + row[idx+3*cols:] + TERM.render("${NORMAL}")
+            row = TERM.render(dim + "${CYAN}" + row[:idx] + "${YELLOW}" + row[idx:idx+3*cols] + "${BLUE}") + row[idx+3*cols:] + TERM.render("${NORMAL}")
         print(row, file=file)
 
 
