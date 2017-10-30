@@ -2,6 +2,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import sys
 import struct
+import io
 from string import punctuation, digits, ascii_letters
 
 import six
@@ -94,7 +95,7 @@ def hexdump(data, cols=8, folded=False, stream=False, offset=0, header=False):
             line = ' ' * (hexlen + 2)
             for i in range(min(cols, size + offset)):
                 line += '{:2X} '.format(i)
-            yield line
+            yield line.rstrip()
     else:
         size = None
         hexlen = 5
@@ -103,7 +104,7 @@ def hexdump(data, cols=8, folded=False, stream=False, offset=0, header=False):
             line = ' ' * (5 + 2)
             for i in range(cols):
                 line += '{:2X} '.format(i)
-            yield line
+            yield line.rstrip()
 
     # convert input into iter if needed
     if hasattr(data, 'read'):
@@ -132,6 +133,7 @@ def hexdump(data, cols=8, folded=False, stream=False, offset=0, header=False):
                 # byte is equal to previous => count range of equal bytes
                 if last_byte == byte:
                     skipped += 1
+                last_byte = byte
                 offset += 1
                 if isinstance(byte, str):
                     bval = ord(byte)
@@ -149,7 +151,6 @@ def hexdump(data, cols=8, folded=False, stream=False, offset=0, header=False):
                 else:
                     string += '.'
                 line += '{:02X} '.format(bval)
-                last_byte = byte
         except StopIteration:
             run = False
 
@@ -172,7 +173,7 @@ def hexdump(data, cols=8, folded=False, stream=False, offset=0, header=False):
         # yield only if no StopIteration was thrown or bytes are remaining
         if offset % cols != 0 or run:
             line += string
-            yield line
+            yield line.rstrip()
 
 
 def print_hexdump(data, colored=False, cols=16, file=sys.stdout, header=False, bright=False, *args, **kwargs):
@@ -190,7 +191,7 @@ def print_hexdump(data, colored=False, cols=16, file=sys.stdout, header=False, b
 
 
 def hexII(data, cols=8, folded=False, stream=False, offset=0, header=True):
-    ASCII = (punctuation + digits + ascii_letters).encode()
+    ASCII = (punctuation + digits + ascii_letters + ' ').encode()
 
     def char(c):
         if c == 0x00:
@@ -210,13 +211,14 @@ def hexII(data, cols=8, folded=False, stream=False, offset=0, header=True):
     # determine index width
     if not stream:
         size = len(data)
-        hexlen = len(hex(offset + size - 1)) - 2
+        # not subtracted by one as an additional ] is inserted
+        hexlen = len(hex(offset + size)) - 2
         offset_fmt = '{{:0{}X}}: '.format(hexlen)
         if header:
             line = ' ' * (hexlen + 2)
             for i in range(min(cols, size + offset)):
                 line += '{:2X} '.format(i)
-            yield line
+            yield line.rstrip()
     else:
         size = None
         hexlen = 5
@@ -225,7 +227,7 @@ def hexII(data, cols=8, folded=False, stream=False, offset=0, header=True):
             line = ' ' * (5 + 2)
             for i in range(cols):
                 line += '{:2X} '.format(i)
-            yield line
+            yield line.rstrip()
 
 
     # convert input into iter if needed
@@ -270,13 +272,25 @@ def hexII(data, cols=8, folded=False, stream=False, offset=0, header=True):
             else:
                 fold = False
 
+        # end marker
+        if not run and offset % cols != 0:
+            line += ']'
+            offset += 1
+
         # padding
         if offset % cols != 0:
             line += '   ' * (cols - (offset % cols))
 
         # yield only if no StopIteration was thrown or bytes are remaining
         if offset % cols != 0 or run:
-            yield line
+            yield line.rstrip()
+
+    # end marker if newline
+    if offset % cols == 0:
+        line = offset_fmt.format(offset - (offset % cols))
+        line += ']'
+        offset += 1
+        yield line
 
 
 def print_hexII(data, colored=False, cols=16, file=sys.stdout, bright=False, *args, **kwargs):
@@ -288,6 +302,117 @@ def print_hexII(data, colored=False, cols=16, file=sys.stdout, bright=False, *ar
             idx = row.find(':') + 1
             row = TERM.render(dim + "${CYAN}" + row[:idx] + "${YELLOW}" + row[idx:idx+3*cols] + "${BLUE}") + row[idx+3*cols:] + TERM.render("${NORMAL}")
         print(row, file=file)
+
+
+def parse_hexdump(data):
+    out = io.BytesIO()
+    lines = data.splitlines()
+
+    hexlength = None
+    last_byte = None
+    last_offset = None
+    folded = False
+    for line in lines:
+
+        if '*' == line.strip():
+            folded = True
+            continue
+
+        if ':' not in line: # header
+            hexlength = len(list(filter(lambda b: b, line.strip().split(' '))))
+            continue
+
+        offset, data = line.split(':', 1)
+
+        if hexlength:
+            idx = line.find(':') + 1
+            while line[idx] == ' ':
+                idx += 1
+            data = line[idx:idx+hexlength*3]
+
+        offset = int(offset, 16)
+
+        if folded:
+            out.seek(last_offset + hexlength)
+            out.write(last_byte * (offset - last_offset - hexlength))
+            folded = False
+
+        last_offset = offset
+        data = data.strip()
+
+        out.seek(offset)
+
+        for i, byte in enumerate(data.split(' ')):
+            if not byte:
+                break
+            if len(byte) != 2:
+                break
+            try:
+                last_byte = bytes([int(byte, 16)])
+                out.write(last_byte)
+            except ValueError:
+                break
+        if not hexlength:
+            hexlength = i
+
+    return out.getvalue()
+
+
+def parse_hexII(data):
+    out = io.BytesIO()
+    lines = data.splitlines()
+
+    hexlength = None
+    last_byte = None
+    last_offset = None
+    folded = False
+    for line in lines:
+
+        if '*' == line.strip():
+            folded = True
+            continue
+
+        if ': ' not in line: # header
+            hexlength = len(list(filter(lambda b: b, line.strip().split(' '))))
+            continue
+
+        offset, data = line.split(':', 1)
+
+        if not hexlength:
+            hexlength = len(data) // 3
+
+        offset = int(offset, 16)
+
+        if folded:
+            out.seek(last_offset + hexlength)
+            out.write(last_byte * (offset - last_offset - hexlength))
+            folded = False
+
+        last_offset = offset
+
+        out.seek(offset)
+
+        for i in range(0, len(data), 3):
+            byte = data[i+1:i+3]
+            if not byte:
+                break
+            
+            if byte == ']':
+                break
+            elif byte == '  ':
+                last_byte = b'\x00'
+            elif byte == '##':
+                last_byte = b'\xff'
+            elif byte.startswith('.'):
+                last_byte = byte[1].encode()
+            else:
+                last_byte = bytes([int(byte, 16)])
+            out.write(last_byte)
+
+        if not hexlength:
+            hexlength = i
+
+    return out.getvalue()
 
 
 def print_struct(struct, ident=0):
